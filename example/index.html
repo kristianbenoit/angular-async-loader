@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>angular-loader example</title>
+    <script src="angular.js"></script>
+    <script src="../src/angular-loader.js"></script>
+    <script>
+      angular.module("app", ["angular-loader"])
+      .config(function($ngLoadProvider) {
+        $ngLoadProvider.defineDep("autocompleteService", ['http://maps.googleapis.com/maps/api/js?libraries=places', 'angular-google-places.js']);
+      })
+
+      .controller("ctrl", function($scope, $ngLoad) {
+        var autocompleteService = null;
+        $scope.predictions=[];
+        $scope.loaded = false;
+
+        $ngLoad("autocompleteService").then(function(completesrv){
+          autocompleteService = completesrv
+          $scope.loaded = true;
+        });
+
+        $scope.autocomplete = function() {
+          autocompleteService.getPlacePredictions({input: $scope.search}).then(function(res) {
+            console.log("setting predictions");
+            $scope.predictions = res;
+          });
+        }
+      });
+    </script>
+  </head>
+  <body ng-app="app" ng-controller="ctrl">
+    <h1>{{loaded ? 'Type your address' : 'loading'}}</h1>
+    <input type="text" ng-model="search" ng-change="autocomplete()" ng-disabled="!loaded"></input>
+    <div ng-repeat="p in predictions">
+      {{p.description}}
+    </div>
+  </body>
+</html>
