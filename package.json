@@ -1,6 +1,8 @@
 {
   "author": "Kristian Benoit<kristian.benoit@gmail.com>",
   "name": "angular-loader",
+  "description": "Load angular modules and their dependencies asynchronously",
+  "repository": "git@github.com:kristianbenoit/angular-loader.git",
   "version": "0.1.0",
   "dependencies": {},
   "devDependencies": {
