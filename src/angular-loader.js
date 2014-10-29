@@ -8,7 +8,7 @@
     var moduleFunc = angular.module;
     angular.module = function(name, dep) {
       var module = moduleFunc(name, dep);
-      if (dep && moduleDependencies.indexOf(name) != -1) {
+      if (dep && moduleDependencies.indexOf(name) !== -1) {
         module.controller = $controllerProvider.register;
         module.compile = $compileProvider.directive;
         module.filter = $filterProvider.register;
@@ -43,7 +43,7 @@
 
       $get : function($window, $interval, $timeout, $q, $injector) {
 
-        net = (function() {
+        var net = (function() {
           var $cordovaNetwork = null;
           if ($injector.has("$cordovaNetwork")) {
             $cordovaNetwork = $injector.get("$cordovaNetwork");
@@ -82,7 +82,7 @@
           this._contextList = [];
           var thisinstance = this;
 
-          $window.addEventListener("online", function(e) {
+          net.addOnlineListener(function(e) {
             // Try for 10 seconds to get the script after getting online.
             var ctx = thisinstance.getCurrent();
             if (ctx) {
@@ -94,7 +94,7 @@
             }
           });
 
-          $window.removeEventListener("offline", function(e) {
+          net.addOfflineListener(function(e) {
             var ctx = this.getCurrent();
             WriteContext.clearOnlinePromise(ctx);
           });
@@ -128,10 +128,10 @@
           console.log("Shifting to :");
           console.log(ctx);
           if (ctx) {
-            if (loadedDep.indexOf(ctx.url) != -1) {
+            if (loadedDep.indexOf(ctx.url) !== -1) {
               ctx.deferred.resolve(ctx.url);
               this.shift();
-            } else if (navigator.onLine) {
+            } else if (net.isOnline) {
               console.log("already online, getting script");
               this.getScript(ctx.url);
             } else {
@@ -230,7 +230,7 @@
 
           // Return the promise
           return $q.all(promises).then(function() {
-            retObj = {}
+            var retObj = {};
             components.forEach(function(component) {
               if (component[0] === ':') {
                 retObj[component] = component;
