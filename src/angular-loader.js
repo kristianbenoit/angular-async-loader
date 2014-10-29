@@ -4,7 +4,7 @@
 
   .config(function($controllerProvider, $compileProvider, $filterProvider, $provide) {
     console.log("Redefining angular.module");
-    moduleFunc = angular.module;
+    var moduleFunc = angular.module;
     angular.module = function(name, dep) {
       console.log("creating a module named " + name);
       var module = moduleFunc(name, dep);
@@ -20,21 +20,21 @@
         module.decorator = $provide.decorator;
       }
       return module;
-    }
+    };
   })
     
 
   .provider("$ngLoad", function() {
     var moduleFunc = angular.module;
 
-    dependancies = {}
+    var dependancies = {};
     return {
       defineDep : function(name, dep) {
         dependancies[name] = dep;
       },
 
       $get : function($window, $interval, $timeout, $q, $injector) {
-        WriteContext = function() {
+        var WriteContext = function() {
           this._currentContext = null;
           this._contextList = [];
           var thisinstance = this;
@@ -48,7 +48,7 @@
                 $interval.cancel(ctx.onlinePromise);
               }
               ctx.onlinePromise = $interval(function() {
-                thisinstance.getScript(ctx.url)
+                thisinstance.getScript(ctx.url);
               }, 5000, 20);
             }
           });
@@ -61,11 +61,11 @@
             }
           });
 
-        }
+        };
 
         WriteContext.prototype.push = function(context) {
           console.log("pushing " + context.url);
-          deferred =  $q.defer();
+          var deferred =  $q.defer();
           angular.extend(context, {writeCount: 0, deferred : deferred, onlinePromise : null});
           this._contextList.push(context);
           if (!this.getCurrent()) {
@@ -73,7 +73,7 @@
           }
 
           return deferred.promise;
-        }
+        };
 
         WriteContext.prototype.shift = function() {
           ctx = this.getCurrent();
@@ -93,11 +93,11 @@
               });
             }
           }
-        }
+        };
 
         WriteContext.prototype.getCurrent = function() {
           return this._currentContext;
-        }
+        };
 
         WriteContext.prototype.getScript = function(url) {
           console.log("getting " + url);
@@ -117,7 +117,7 @@
             console.log("load reveived for " + url);
             // Check if this script has injected another script before
             // calling back.
-            if (ctx.writeCount == myCount) {
+            if (ctx.writeCount === myCount) {
               $timeout(function() {
                 console.log("no write received, returning");
                 ctx.deferred.resolve(ctx.url);
@@ -131,9 +131,9 @@
             console.log("appendingChild");
             head.appendChild(script);
           } catch(err) {
-            deferred.reject(err);
+            ctx.deferred.reject(err);
           }
-        }
+        };
 
         document.superWrite = document.write;
         document.write = function(text) {
@@ -152,16 +152,15 @@
           if (!managed) {
             document.superWrite(text);
           }
-        }
+        };
         document.write.context = new WriteContext();
 
 
         return function(name) {
-          if (name.substring(0,7) == "http://" || name.substring(0,8) == "https://") {
-            return document.write.context.push({url : name})
+          if (name.substring(0,7) === "http://" || name.substring(0,8) === "https://") {
+            return document.write.context.push({url : name});
           } else {
             var promises = [];
-            console.log(dependancies);
             dependancies[name].forEach(function(d) {
               promises.push(document.write.context.push({url: d}));
             });
@@ -169,8 +168,8 @@
               return $injector.get(name);
             });
           }
-        }
+        };
       }
-    }
-  })
+    };
+  });
 })();
