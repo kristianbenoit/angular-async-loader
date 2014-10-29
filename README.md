@@ -10,32 +10,84 @@ it uses navigator.onLine which does not work with all browser.
 Firefox gets offline only if in offline mode, not if the connection is down.
 
 TODO:
-Use $cordovaNetwork
 Make the getScript configurable
-Load multiple services
-Send notified of the progress
+Send notification of the progress
+Unit tests
 
+Install
+=======
 
 To load other modules asynchronously:
 ```javascript
 angular.module("app", ["angular-loader"])
 ```
 
-Configure the loader:
-```javascript
-.config(function($ngLoadProvider) {
-  $ngLoadProvider.loadModules(["<modulenames>", ...])
-  .defineDep("<service>", ["<scripturls>", ...])
-  .defineDep(...);
+Basic usage
+===========
 
+Load a script and get notified. This won't load any angular definitions
+in you app unless you configure de module dependencies.
+```javascript
+.controller("myCtrl", function($ngLoad) {
+  $ngLoad("http(s)://...").then(function() {
+    // Do something.
+  });
 });
 ```
 
-Load a service in your controller:
+Configuration
+=============
+
+$ngLoadProvider.addModuleDep tells angular-loader to load the definitions
+from these modules into the application when they are loaded. Similar to
+angular.module("name", ["modulenames", ...]);
+
+$ngLoadProvider.defineDep is for defining the dependencies in terms of url,
+script to load, for an injectable.
+
+```javascript
+.config(function($ngLoadProvider) {
+  $ngLoadProvider.addModuleDep(["modulenames", ...])
+  .defineDep("service", ["scripturls", ...])
+  .defineDep(...);
+});
+```
+
+Usage
+=====
+
+Call $ngLoad with the component name you want to get. It returns a promise that is
+resolved with the component when all it's dependencies are loaded. 
+
 ```javascript
 .controller("myCtrl", function($ngLoad) {
-  $ngLoad("<service>").then(function(<service>) {
-    // Do something with <service>.
+  $ngLoad("service").then(function(service) {
+    // Do something with service.
+  });
+});
+```
+
+If you want to group dependancies together, without an injectable component, prefix
+the dependancy name with ':'. This prevent $ngLoad from injecting the name.
+```javascript
+.config(function($ngLoadProvider) {
+  $ngLoadProvider.defineDep(":name", ["urls", ...]);
+})
+.controller("myCtrl", function($ngLoad) {
+  $ngLoad(":name").then(function(name) {
+    // Do something like show a div that uses a controller or directive that just
+    // got loaded.
+    // name has the value ":name".
+  });
+});
+```
+
+Load multiple components:
+```javascript
+.controller("myCtrl", function($ngLoad) {
+  $ngLoad(["service", "otherComponent", ":name", ...]).then(function(dep) {
+    // dep => {service : <service>, otherComponent : <otherComponent>, ":name" : ":name", ...}
+    // i.e. You can user dep.service to use service.
   });
 });
 ```
@@ -43,21 +95,13 @@ Load a service in your controller:
 To be implemented
 =================
 
-Load multiple services:
-```javascript
-.controller("myCtrl", function($ngLoad) {
-  $ngLoad(["service1", "service2", ...]).then(function(dep) {
-    // dep => {service1 : <service1>, service2 : <service2>, ...}
-    // i.e. You can user dep.service1 to use service1.
-  });
-});
-```
+Does not seem easy as $q.all does not forward notifications.
 
 Get notified of the progess:
 ```javascript
 .controller("myCtrl", function($ngLoad) {
-  $ngLoad("service").then(function(dep) {
-    // Do something with <service>.
+  $ngLoad("service").then(function(service) {
+    // Do something with service.
   }, function (err) {
     console.log(err);
   }, function (notif) {

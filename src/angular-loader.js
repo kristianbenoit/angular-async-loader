@@ -1,4 +1,5 @@
 (function() {
+  var moduleDependencies = [];
 
   angular.module("angular-loader", [])
 
@@ -6,9 +7,8 @@
     console.log("Redefining angular.module");
     var moduleFunc = angular.module;
     angular.module = function(name, dep) {
-      console.log("creating a module named " + name);
       var module = moduleFunc(name, dep);
-      if (dep) {
+      if (dep && moduleDependencies.indexOf(name) != -1) {
         module.controller = $controllerProvider.register;
         module.compile = $compileProvider.directive;
         module.filter = $filterProvider.register;
@@ -27,13 +27,56 @@
   .provider("$ngLoad", function() {
     var moduleFunc = angular.module;
 
-    var dependancies = {};
-    return {
+    var loadedDep = [];
+    var dependenciesDefinition = {};
+
+    var $ngLoadProvider = {
       defineDep : function(name, dep) {
-        dependancies[name] = dep;
+        dependenciesDefinition[name] = dep;
+        return $ngLoadProvider;
+      },
+
+      addModuleDep : function(modules) {
+        moduleDependencies = moduleDependencies.concat(modules);
+        return $ngLoadProvider;
       },
 
       $get : function($window, $interval, $timeout, $q, $injector) {
+
+        net = (function() {
+          var $cordovaNetwork = null;
+          if ($injector.has("$cordovaNetwork")) {
+            $cordovaNetwork = $injector.get("$cordovaNetwork");
+          }
+
+          return {
+            isOnline : function () {
+              if ($cordovaNetwork) {
+                return $cordovaNetwork.isOnline();
+              } else {
+                return navigator.onLine;
+              }
+            },
+
+            addOnlineListener : function(callback) {
+              if ($cordovaNetwork) {
+                return document.addEventListener("online", callback);
+              } else {
+                return $window.addEventListener("online", callback);
+              }
+            },
+
+            addOfflineListener : function(callback) {
+              if ($cordovaNetwork) {
+                document.addEventListener("offline", callback);
+              } else {
+                $window.addEventListener("offline", callback);
+              }
+            }
+
+          };
+        })();
+
         var WriteContext = function() {
           this._currentContext = null;
           this._contextList = [];
@@ -44,9 +87,7 @@
             var ctx = thisinstance.getCurrent();
             if (ctx) {
               console.log("got online, trying every in 5s");
-              if (ctx.onlinePromise) {
-                $interval.cancel(ctx.onlinePromise);
-              }
+              WriteContext.clearOnlinePromise(ctx);
               ctx.onlinePromise = $interval(function() {
                 thisinstance.getScript(ctx.url);
               }, 5000, 20);
@@ -55,12 +96,16 @@
 
           $window.removeEventListener("offline", function(e) {
             var ctx = this.getCurrent();
-            if (ctx && ctx.onlinePromise) {
-              $interval.cancel(ctx.onlinePromise);
-              ctx.onlinePromise = null;
-            }
+            WriteContext.clearOnlinePromise(ctx);
           });
 
+        };
+
+        WriteContext.clearOnlinePromise = function(ctx) {
+          if (ctx && ctx.onlinePromise) {
+            $interval.cancel(ctx.onlinePromise);
+            ctx.onlinePromise = null;
+          }
         };
 
         WriteContext.prototype.push = function(context) {
@@ -75,23 +120,26 @@
           return deferred.promise;
         };
 
+
         WriteContext.prototype.shift = function() {
           ctx = this.getCurrent();
-          if (ctx && ctx.onlinePromise) {
-            $interval.cancel(ctx.onlinePromise);
-          }
+          WriteContext.clearOnlinePromise(ctx);
           var ctx = this._currentContext = this._contextList.shift();
           console.log("Shifting to :");
           console.log(ctx);
           if (ctx) {
-            if (navigator.onLine) {
+            if (loadedDep.indexOf(ctx.url) != -1) {
+              ctx.deferred.resolve(ctx.url);
+              this.shift();
+            } else if (navigator.onLine) {
               console.log("already online, getting script");
               this.getScript(ctx.url);
             } else {
               ctx.deferred.promise.then(function() {
-                $interval.cancel(ctx.onlinePromise);
+                WriteContext.clearOnlinePromise(ctx);
               });
             }
+          
           }
         };
 
@@ -111,9 +159,7 @@
           console.log("registering listener");
           script.addEventListener('load', function (event) {
 
-            if (ctx.onlinePromise) {
-              $interval.cancel(ctx);
-            }
+            WriteContext.clearOnlinePromise(ctx);
             console.log("load reveived for " + url);
             // Check if this script has injected another script before
             // calling back.
@@ -124,6 +170,8 @@
                 document.write.context.shift();
               }, 0);
             }
+
+            loadedDep.push(ctx.url);
           }, false);
           console.log("after listener");
 
@@ -156,20 +204,51 @@
         document.write.context = new WriteContext();
 
 
-        return function(name) {
-          if (name.substring(0,7) === "http://" || name.substring(0,8) === "https://") {
-            return document.write.context.push({url : name});
+        return function(arg) {
+
+          // Deal with simple urls.
+          if (typeof arg === "string" && (arg.substring(0,7) === "http://" || arg.substring(0,8) === "https://")) {
+            return document.write.context.push({url : arg});
+          }
+
+          // Make sur we deal with an array.
+          var components = null;
+
+          if (typeof arg === "string") {
+            components = [arg];
           } else {
-            var promises = [];
-            dependancies[name].forEach(function(d) {
+            components = arg;
+          }
+
+          // Get a promise for every url.
+          var promises = [];
+          components.forEach(function(component) {
+            dependenciesDefinition[component].forEach(function(d) {
               promises.push(document.write.context.push({url: d}));
             });
-            return $q.all(promises).then(function() {
-              return $injector.get(name);
+          });
+
+          // Return the promise
+          return $q.all(promises).then(function() {
+            retObj = {}
+            components.forEach(function(component) {
+              if (component[0] === ':') {
+                retObj[component] = component;
+              } else {
+                retObj[component] = $injector.get(component);
+              }
             });
-          }
+
+            if (typeof arg === 'string') {
+              return retObj[arg];
+            }
+            return retObj;
+          });
+
         };
+
       }
     };
+    return $ngLoadProvider;
   });
 })();

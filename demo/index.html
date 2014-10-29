@@ -8,7 +8,8 @@
     <script>
       angular.module("app", ["angular-loader"])
       .config(function($ngLoadProvider) {
-        $ngLoadProvider.defineDep("autocompleteService", ['http://maps.googleapis.com/maps/api/js?libraries=places', 'angular-google-places.js']);
+        $ngLoadProvider.addModuleDep(["google-places"])
+        .defineDep("autocompleteService", ['http://maps.googleapis.com/maps/api/js?libraries=places', 'angular-google-places.js']);
       })
 
       .controller("ctrl", function($scope, $ngLoad) {
