@@ -1,3 +1,8 @@
+/**
+ * @license angular-async-loader
+ * (c) 2014 Kristian Benoit
+ * License: MIT
+ */
 (function() {
   var moduleDependencies = [];
 
