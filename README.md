@@ -9,10 +9,6 @@ is available, it will use it to check online status. Otherwise
 it uses navigator.onLine which does not work with all browser.
 Firefox gets offline only if in offline mode, not if the connection is down.
 
-TODO:
-Make the getScript configurable
-Unit tests
-
 Install
 =======
 
@@ -87,24 +83,6 @@ Load multiple components:
   $ngLoad(["service", "otherComponent", ":name", ...]).then(function(dep) {
     // dep => {service : <service>, otherComponent : <otherComponent>, ":name" : ":name", ...}
     // i.e. You can user dep.service to use service.
-  });
-});
-```
-
-To be implemented
-=================
-
-Does not seem easy as $q.all does not forward notifications.
-
-Get notified of the progess:
-```javascript
-.controller("myCtrl", function($ngLoad) {
-  $ngLoad("service").then(function(service) {
-    // Do something with service.
-  }, function (err) {
-    console.log(err);
-  }, function (notif) {
-    // Sends you notifications as it loads scripts.
   });
 });
 ```
