@@ -1,10 +1,10 @@
 (function() {
   var moduleDependencies = [];
 
-  angular.module("angular-loader", [])
+  angular.module("angular-async-loader", [])
 
-  .config(function($controllerProvider, $compileProvider, $filterProvider, $provide) {
-    console.log("Redefining angular.module");
+  //Register the content of modules as they are loaded if configured to do so.
+  .config(['$controllerProvider', '$compileProvider', '$filterProvider', '$provide', function($controllerProvider, $compileProvider, $filterProvider, $provide) {
     var moduleFunc = angular.module;
     angular.module = function(name, dep) {
       var module = moduleFunc(name, dep);
@@ -21,7 +21,7 @@
       }
       return module;
     };
-  })
+  }])
     
 
   .provider("$ngLoad", function() {
@@ -41,7 +41,7 @@
         return $ngLoadProvider;
       },
 
-      $get : function($window, $interval, $timeout, $q, $injector) {
+      $get : ['$window', '$interval', '$timeout', '$q', '$injector', function($window, $interval, $timeout, $q, $injector) {
 
         var net = (function() {
           var $cordovaNetwork = null;
@@ -86,16 +86,17 @@
             // Try for 10 seconds to get the script after getting online.
             var ctx = thisinstance.getCurrent();
             if (ctx) {
-              console.log("got online, trying every in 5s");
               WriteContext.clearOnlinePromise(ctx);
               ctx.onlinePromise = $interval(function() {
                 thisinstance.getScript(ctx.url);
-              }, 5000, 20);
+              }, 5000, 20).then(function() {
+                ctx.deferred.reject("Network Error");
+              });
             }
           });
 
           net.addOfflineListener(function(e) {
-            var ctx = this.getCurrent();
+            var ctx = thisinstance.getCurrent();
             WriteContext.clearOnlinePromise(ctx);
           });
 
@@ -109,7 +110,6 @@
         };
 
         WriteContext.prototype.push = function(context) {
-          console.log("pushing " + context.url);
           var deferred =  $q.defer();
           angular.extend(context, {writeCount: 0, deferred : deferred, onlinePromise : null});
           this._contextList.push(context);
@@ -125,14 +125,11 @@
           ctx = this.getCurrent();
           WriteContext.clearOnlinePromise(ctx);
           var ctx = this._currentContext = this._contextList.shift();
-          console.log("Shifting to :");
-          console.log(ctx);
           if (ctx) {
             if (loadedDep.indexOf(ctx.url) !== -1) {
               ctx.deferred.resolve(ctx.url);
               this.shift();
             } else if (net.isOnline) {
-              console.log("already online, getting script");
               this.getScript(ctx.url);
             } else {
               ctx.deferred.promise.then(function() {
@@ -148,7 +145,6 @@
         };
 
         WriteContext.prototype.getScript = function(url) {
-          console.log("getting " + url);
           var ctx = this.getCurrent();
           var head = document.getElementsByTagName('head')[0];
           var script = document.createElement("script");
@@ -156,16 +152,13 @@
 
           ctx.writeCount++;
           var myCount = ctx.writeCount;
-          console.log("registering listener");
           script.addEventListener('load', function (event) {
 
             WriteContext.clearOnlinePromise(ctx);
-            console.log("load reveived for " + url);
             // Check if this script has injected another script before
             // calling back.
             if (ctx.writeCount === myCount) {
               $timeout(function() {
-                console.log("no write received, returning");
                 ctx.deferred.resolve(ctx.url);
                 document.write.context.shift();
               }, 0);
@@ -173,10 +166,8 @@
 
             loadedDep.push(ctx.url);
           }, false);
-          console.log("after listener");
 
           try {
-            console.log("appendingChild");
             head.appendChild(script);
           } catch(err) {
             ctx.deferred.reject(err);
@@ -185,10 +176,7 @@
 
         document.superWrite = document.write;
         document.write = function(text) {
-          console.log("Asked to write " + text);
           var managed = false;
-          console.log("current is :");
-          console.log(document.write.context.getCurrent());
           if (document.write.context.getCurrent()) {
             var res = /^<script[^>]*src="([^"]*)"[^>]*><\/script>$/.exec(text);
             if (res) {
@@ -207,7 +195,7 @@
         return function(arg) {
 
           // Deal with simple urls.
-          if (typeof arg === "string" && (arg.substring(0,7) === "http://" || arg.substring(0,8) === "https://")) {
+          if (typeof arg === "string" && (arg.match('//'))) {
             return document.write.context.push({url : arg});
           }
 
@@ -243,11 +231,14 @@
               return retObj[arg];
             }
             return retObj;
+          },
+          function(error) {
+            $q.reject(error);
           });
 
         };
 
-      }
+      }]
     };
     return $ngLoadProvider;
   });

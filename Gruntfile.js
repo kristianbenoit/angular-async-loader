@@ -14,40 +14,16 @@ module.exports = function( grunt ) {
     'grunt-contrib-concat',
     'grunt-contrib-uglify',
     'grunt-contrib-jshint',
-    'grunt-contrib-watch',
-    'grunt-contrib-connect',
-    'grunt-contrib-copy',
     'grunt-contrib-clean',
-    'grunt-bowerful'
+    'grunt-karma'
   ];
-
-  var describe = shell.exec('git describe');
 
   grunt.initConfig({
 
     pkg: grunt.file.readJSON('package.json'),
-    git: {
-      description: describe.output.trim()
-    },
 
     clean: {
       dist: [DISTDIR],
-      site: ['site']
-    },
-
-    copy: {
-      demo: {
-        expand: true,
-        cwd: 'demo/',
-        src: ['**/*'],
-        dest: 'site/'
-      },
-      concat: {
-        expand: true,
-        flatten: true,
-        src: [ '<%= concat.dist.dest %>' ],
-        dest: 'site/components/angular-virtual-scroll/'
-      }
     },
 
     concat: {
@@ -112,88 +88,16 @@ module.exports = function( grunt ) {
           }
         }
       }
-    },
-
-    docco: {
-      virtualScroll: {
-        src: SOURCES,
-        dest: 'docs/',
-        options: {
-          layout: "parallel"
-        }
-      }
-    },
-
-    bowerful: {
-      site: {
-        store: 'site/components',
-
-        packages: {
-          'angular': "1.2.x",
-          'angular-route': "1.2.x",
-          jquery: "1.9.x",
-          json3: "3.2.x",
-          "es5-shim": "2.0.x",
-          "bootstrap": "3.1.1",
-          "jasmine-jquery": "1.x"
-        }
-      }
-    },
-
-    connect: {
-      site: {
-        options: {
-          port: 8000,
-          host: '*',
-          base: 'site'
-        }
-      },
-      docs: {
-        options: {
-          port: 9001,
-          base: 'docs'
-        }
-      }
-    },
-
-    watch: {
-      sources: {
-        options: {
-          livereload: true
-        },
-        files: SOURCES,
-        tasks: ['jshint:source', 'concat', 'copy:concat']
-      },
-      demo: {
-        options: {
-          livereload: true
-        },
-        files: ['demo/**/*'],
-        tasks: ['jshint:source', 'copy:demo']
-      },
-      gruntFile: {
-        options: {
-          reload: true
-        },
-        files: ['Gruntfile.js'],
-        tasks: ['jshint:grunt']
-      }
     }
-
   });
 
   TASK_IMPORTS.forEach(grunt.loadNpmTasks);
 
-  grunt.registerTask('default', ['jshint', 'doc']);
+  grunt.registerTask('default', ['jshint']);
 
   grunt.registerTask('dist', ['jshint', 'concat', 'min']);
 
-  grunt.registerTask('doc', ['docco']);
   grunt.registerTask('min', ['uglify']);
-
-  // 'demo' task - stage demo system into 'site' and watch for source changes
-  grunt.registerTask('build-site', ['bowerful', 'copy:demo', 'concat', 'copy:concat']);
-  grunt.registerTask('demo', ['clean:site', 'build-site', 'connect:site', 'watch']);
 
   function run(cmd, msg){
     shell.exec(cmd, {silent:true});
@@ -243,21 +147,4 @@ module.exports = function( grunt ) {
 
   grunt.registerTask('release', 'build and push to the bower component repo',
                      ['release-prepare', 'dist', 'release-commit']);
-
-  var docco = require('docco');
-
-  grunt.registerMultiTask('docco', 'Docco processor.', function() {
-      var task = this,
-      fdone = 0,
-      flength = this.files.length,
-      done = this.async();
-
-      this.files.forEach(function(file) {
-        docco.document(task.options({ output: file.dest, args: file.src }), function(){
-          if(++fdone === flength){
-            done();
-          }
-        });
-      });
-    });
 };

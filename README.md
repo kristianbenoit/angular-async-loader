@@ -11,7 +11,6 @@ Firefox gets offline only if in offline mode, not if the connection is down.
 
 TODO:
 Make the getScript configurable
-Send notification of the progress
 Unit tests
 
 Install
@@ -19,7 +18,7 @@ Install
 
 To load other modules asynchronously:
 ```javascript
-angular.module("app", ["angular-loader"])
+angular.module("app", ["angular-async-loader"])
 ```
 
 Basic usage
