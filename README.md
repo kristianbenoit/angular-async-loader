@@ -12,7 +12,17 @@ Firefox gets offline only if in offline mode, not if the connection is down.
 Install
 =======
 
-To load other modules asynchronously:
+Using bower:
+```sh
+bower install --save angular-async-loader
+```
+
+Include the script in your html after angular.js:
+```html
+<script src="bower_components/angular-async-loader/dist/angular-async-loader.js></script>
+```
+
+Then import the angular module.
 ```javascript
 angular.module("app", ["angular-async-loader"])
 ```
