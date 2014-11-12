@@ -1,3 +1,0 @@
-[submodule "dist"]
-	path = dist
-	url = git@github.com:kristianbenoit/angular-async-loader-bower.git
