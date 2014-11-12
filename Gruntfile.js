@@ -7,7 +7,7 @@ module.exports = function( grunt ) {
   var SOURCES = [ 'src/**/*.js' ];
   var DEMOSOURCES = [ 'demo/scripts/**/*.js' ];
   var DISTSOURCES = [
-    'src/angular-loader.js'
+    'src/angular-async-loader.js'
   ];
   var DISTDIR = 'dist';
   var TASK_IMPORTS = [
