@@ -158,11 +158,12 @@
           ctx.writeCount++;
           var myCount = ctx.writeCount;
           script.addEventListener('load', function (event) {
+            ctx.writeCount--;
 
             WriteContext.clearOnlinePromise(ctx);
             // Check if there are injected scripts before
             // resolving.
-            if (ctx.writeCount === myCount) {
+            if (ctx.writeCount === 0) {
               $timeout(function() {
                 ctx.deferred.resolve(ctx.url);
                 document.write.context.shift();
