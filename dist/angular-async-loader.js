@@ -1,8 +1,8 @@
-// angular-async-loader - v0.1.1
+// angular-async-loader - v1.0.0
 
 /**
  * @license angular-async-loader
- * (c) 2014 Kristian Benoit
+ * (c) 2014-2015 Kristian Benoit
  * License: MIT
  */
 (function() {
@@ -12,8 +12,10 @@
 
   //Register the content of modules as they are loaded if configured to do so.
   .config(['$controllerProvider', '$compileProvider', '$filterProvider', '$provide', function($controllerProvider, $compileProvider, $filterProvider, $provide) {
+    
     var moduleFunc = angular.module;
     angular.module = function(name, dep) {
+      
       var module = moduleFunc(name, dep);
       if (dep && moduleDependencies.indexOf(name) !== -1) {
         module.controller = $controllerProvider.register;
@@ -111,6 +113,7 @@
 
         WriteContext.clearOnlinePromise = function(ctx) {
           if (ctx && ctx.onlinePromise) {
+            
             $interval.cancel(ctx.onlinePromise);
             ctx.onlinePromise = null;
           }
@@ -121,6 +124,7 @@
           angular.extend(context, {writeCount: 0, deferred : deferred, onlinePromise : null});
           this._contextList.push(context);
           if (!this.getCurrent()) {
+            
             this.shift();
           }
 
@@ -133,12 +137,16 @@
           WriteContext.clearOnlinePromise(ctx);
           var ctx = this._currentContext = this._contextList.shift();
           if (ctx) {
+            
             if (loadedDep.indexOf(ctx.url) !== -1) {
+              
               ctx.deferred.resolve(ctx.url);
               this.shift();
             } else if (net.isOnline) {
+              
               this.getScript(ctx.url);
             } else {
+              
               ctx.deferred.promise.then(function() {
                 WriteContext.clearOnlinePromise(ctx);
               });
@@ -152,20 +160,23 @@
         };
 
         WriteContext.prototype.getScript = function(url) {
+          
           var ctx = this.getCurrent();
           var head = document.getElementsByTagName('head')[0];
           var script = document.createElement("script");
           script.src = url;
 
           ctx.writeCount++;
-          var myCount = ctx.writeCount;
           script.addEventListener('load', function (event) {
+            ctx.writeCount--;
 
             WriteContext.clearOnlinePromise(ctx);
-            // Check if this script has injected another script before
-            // calling back.
-            if (ctx.writeCount === myCount) {
+            // Check if there are injected scripts before
+            // resolving.
+            if (ctx.writeCount === 0) {
+              
               $timeout(function() {
+                
                 ctx.deferred.resolve(ctx.url);
                 document.write.context.shift();
               }, 0);
@@ -183,10 +194,12 @@
 
         document.superWrite = document.write;
         document.write = function(text) {
+          
           var managed = false;
           if (document.write.context.getCurrent()) {
             var res = /^<script[^>]*src="([^"]*)"[^>]*><\/script>$/.exec(text);
             if (res) {
+              
               managed = true;
               document.write.context.getScript(res[1]);
             }
@@ -201,12 +214,13 @@
 
         return function(arg) {
 
+          
           // Deal with simple urls.
           if (typeof arg === "string" && (arg.match('//'))) {
             return document.write.context.push({url : arg});
           }
 
-          // Make sur we deal with an array.
+          // Make sure we deal with an array.
           var components = null;
 
           if (typeof arg === "string") {
@@ -225,11 +239,13 @@
 
           // Return the promise
           return $q.all(promises).then(function() {
+            
             var retObj = {};
             components.forEach(function(component) {
               if (component[0] === ':') {
                 retObj[component] = component;
               } else {
+                
                 retObj[component] = $injector.get(component);
               }
             });

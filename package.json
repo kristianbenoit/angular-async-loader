@@ -3,7 +3,7 @@
   "name": "angular-async-loader",
   "description": "Load angular modules and their dependencies asynchronously",
   "repository": "git@github.com:kristianbenoit/angular-async-loader.git",
-  "version": "0.1.1",
+  "version": "1.0.0",
   "devDependencies": {
     "bower": "~1.3.5",
     "docco": "0.6.3",
