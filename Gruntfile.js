@@ -45,7 +45,7 @@ module.exports = function( grunt ) {
 
     removelogging: {
       dist: {
-        src: "dist/**/*.js"
+        src: "<%= concat.dist.dest %>"
       }
     },
 
@@ -102,7 +102,7 @@ module.exports = function( grunt ) {
 
   grunt.registerTask('default', ['jshint']);
 
-  grunt.registerTask('dist', ['jshint', 'concat', 'min', 'removelogging']);
+  grunt.registerTask('dist', ['jshint', 'concat', 'removelogging', 'min']);
 
   grunt.registerTask('min', ['uglify']);
 
