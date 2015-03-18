@@ -165,7 +165,6 @@
           script.src = url;
 
           ctx.writeCount++;
-          var myCount = ctx.writeCount;
           script.addEventListener('load', function (event) {
             ctx.writeCount--;
 
