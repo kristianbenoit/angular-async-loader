@@ -10,8 +10,10 @@
 
   //Register the content of modules as they are loaded if configured to do so.
   .config(['$controllerProvider', '$compileProvider', '$filterProvider', '$provide', function($controllerProvider, $compileProvider, $filterProvider, $provide) {
+    console.debug("ngLoad: redefining what a module is.");
     var moduleFunc = angular.module;
     angular.module = function(name, dep) {
+      console.debug("ngLoad: getting angular module : " + name);
       var module = moduleFunc(name, dep);
       if (dep && moduleDependencies.indexOf(name) !== -1) {
         module.controller = $controllerProvider.register;
@@ -109,6 +111,7 @@
 
         WriteContext.clearOnlinePromise = function(ctx) {
           if (ctx && ctx.onlinePromise) {
+            console.debug("ngLoad: " + ctx.url + " is the new context.");
             $interval.cancel(ctx.onlinePromise);
             ctx.onlinePromise = null;
           }
@@ -119,6 +122,7 @@
           angular.extend(context, {writeCount: 0, deferred : deferred, onlinePromise : null});
           this._contextList.push(context);
           if (!this.getCurrent()) {
+            console.debug("ngLoad: " + context.url + " not loading anything, loading it. (Shifting)");
             this.shift();
           }
 
@@ -131,12 +135,16 @@
           WriteContext.clearOnlinePromise(ctx);
           var ctx = this._currentContext = this._contextList.shift();
           if (ctx) {
+            console.debug("ngLoad: " + ctx.url + " is the new context.");
             if (loadedDep.indexOf(ctx.url) !== -1) {
+              console.debug("ngLoad: " + ctx.url + " is already resolved.");
               ctx.deferred.resolve(ctx.url);
               this.shift();
             } else if (net.isOnline) {
+              console.debug("ngLoad: " + ctx.url + " online, getting script.");
               this.getScript(ctx.url);
             } else {
+              console.debug("ngLoad: " + ctx.url + " waiting to get online.");
               ctx.deferred.promise.then(function() {
                 WriteContext.clearOnlinePromise(ctx);
               });
@@ -150,6 +158,7 @@
         };
 
         WriteContext.prototype.getScript = function(url) {
+          console.debug("ngLoad: getScript " + url);
           var ctx = this.getCurrent();
           var head = document.getElementsByTagName('head')[0];
           var script = document.createElement("script");
@@ -164,7 +173,9 @@
             // Check if there are injected scripts before
             // resolving.
             if (ctx.writeCount === 0) {
+              console.debug("ngLoad: " + ctx.url + " has not injected another script.");
               $timeout(function() {
+                console.debug("ngLoad: " + ctx.url + " all done, resolving and shifting.");
                 ctx.deferred.resolve(ctx.url);
                 document.write.context.shift();
               }, 0);
@@ -182,10 +193,12 @@
 
         document.superWrite = document.write;
         document.write = function(text) {
+          console.debug("ngLoad: Asked to write '" + text + "' to document");
           var managed = false;
           if (document.write.context.getCurrent()) {
             var res = /^<script[^>]*src="([^"]*)"[^>]*><\/script>$/.exec(text);
             if (res) {
+              console.debug("ngLoad: We have to load this script '" + res +"'");
               managed = true;
               document.write.context.getScript(res[1]);
             }
@@ -200,6 +213,7 @@
 
         return function(arg) {
 
+          console.debug("ngLoad: Request for : " + arg);
           // Deal with simple urls.
           if (typeof arg === "string" && (arg.match('//'))) {
             return document.write.context.push({url : arg});
@@ -224,11 +238,13 @@
 
           // Return the promise
           return $q.all(promises).then(function() {
+            console.debug("ngLoad: '" + arg + "': everything is ready");
             var retObj = {};
             components.forEach(function(component) {
               if (component[0] === ':') {
                 retObj[component] = component;
               } else {
+                console.debug("ngLoad: getting from the injector (" + component + ") which is " + ($injector.has(component) ? "present." : "not present."));
                 retObj[component] = $injector.get(component);
               }
             });
