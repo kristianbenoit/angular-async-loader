@@ -1,6 +1,6 @@
 /**
  * @license angular-async-loader
- * (c) 2014 Kristian Benoit
+ * (c) 2014-2015 Kristian Benoit
  * License: MIT
  */
 (function() {
