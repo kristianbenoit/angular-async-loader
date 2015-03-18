@@ -160,8 +160,8 @@
           script.addEventListener('load', function (event) {
 
             WriteContext.clearOnlinePromise(ctx);
-            // Check if this script has injected another script before
-            // calling back.
+            // Check if there are injected scripts before
+            // resolving.
             if (ctx.writeCount === myCount) {
               $timeout(function() {
                 ctx.deferred.resolve(ctx.url);
@@ -204,7 +204,7 @@
             return document.write.context.push({url : arg});
           }
 
-          // Make sur we deal with an array.
+          // Make sure we deal with an array.
           var components = null;
 
           if (typeof arg === "string") {
