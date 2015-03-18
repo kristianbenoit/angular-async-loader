@@ -15,6 +15,7 @@ module.exports = function( grunt ) {
     'grunt-contrib-uglify',
     'grunt-contrib-jshint',
     'grunt-contrib-clean',
+    'grunt-remove-logging',
     'grunt-karma'
   ];
 
@@ -39,6 +40,12 @@ module.exports = function( grunt ) {
       dist: {
         src: DISTSOURCES,
         dest: DISTDIR + '/<%= pkg.name %>.js'
+      }
+    },
+
+    removelogging: {
+      dist: {
+        src: "dist/**/*.js"
       }
     },
 
@@ -95,7 +102,7 @@ module.exports = function( grunt ) {
 
   grunt.registerTask('default', ['jshint']);
 
-  grunt.registerTask('dist', ['jshint', 'concat', 'min']);
+  grunt.registerTask('dist', ['jshint', 'concat', 'min', 'removelogging']);
 
   grunt.registerTask('min', ['uglify']);
 
