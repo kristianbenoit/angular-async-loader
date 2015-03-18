@@ -1,4 +1,4 @@
-// angular-async-loader - v1.0.0
+// angular-async-loader - v1.0.1
 
 /**
  * @license angular-async-loader
